@@ -1,5 +1,6 @@
 package me.william278.huskhomes2.listeners;
 
+import io.papermc.lib.PaperLib;
 import me.william278.huskhomes2.HuskHomes;
 import me.william278.huskhomes2.util.MessageManager;
 import me.william278.huskhomes2.commands.HomeCommand;
@@ -49,7 +50,7 @@ public class PlayerListener implements Listener {
                 try (Connection connection = HuskHomes.getConnection()) {
                     if (!DataManager.playerExists(p, connection)) {
                         DataManager.createPlayer(p, connection);
-                        if (TeleportManager.getSpawnLocation().isPresent()) {
+                        if (TeleportManager.getSpawnLocation() != null) {
                             teleportToSpawn(p);
                             return;
                         }
@@ -83,7 +84,7 @@ public class PlayerListener implements Listener {
                         }
                     } else {
                         if (HuskHomes.getSettings().doForceSpawnOnLogin()) {
-                            if (TeleportManager.getSpawnLocation().isPresent()) {
+                            if (TeleportManager.getSpawnLocation() != null) {
                                 teleportToSpawn(p);
                             }
                         }
@@ -108,12 +109,14 @@ public class PlayerListener implements Listener {
     }
 
     private void teleportToSpawn(Player player) {
-        TeleportManager.getSpawnLocation().ifPresent(teleportationPoint -> {
-            final Location spawnLocation = teleportationPoint.getLocation();
-            if (spawnLocation.isWorldLoaded()) {
-                TeleportManager.teleportLocally(player, spawnLocation, false);
-            }
-        });
+        if (TeleportManager.getSpawnLocation() != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isEmpty()) {
+                    player.eject(); // Eject passengers before teleporting
+                }
+                PaperLib.teleportAsync(player, TeleportManager.getSpawnLocation().getLocation());
+            });
+        }
     }
 
     @EventHandler

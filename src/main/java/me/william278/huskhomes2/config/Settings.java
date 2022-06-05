@@ -7,8 +7,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 
-import javax.annotation.Nullable;
-
 public class Settings {
 
     private final Plugin plugin;
@@ -76,9 +74,6 @@ public class Settings {
 
     // Vanished player checks
     private boolean checkVanishedPlayers;
-
-    // Use PaperLib if available
-    private boolean usePaperLibIfAvailable;
 
     // Time and maximum home settings
     private int maximumHomes;
@@ -233,30 +228,18 @@ public class Settings {
             // Retrieve sounds used in plugin; if invalid, use defaults.
             try {
                 this.teleportationCompleteSound = Sound.valueOf(config.getString("general.sounds.teleportation_complete", "ENTITY_ENDERMAN_TELEPORT"));
-            } catch (IllegalArgumentException exception) {
-                Bukkit.getLogger().severe("Invalid sound specified for teleportation_complete, using no sound instead");
-                this.teleportationCompleteSound = null;
-            }
-
-            try {
                 this.teleportWarmupSound = Sound.valueOf(config.getString("general.sounds.teleportation_warmup", "BLOCK_NOTE_BLOCK_BANJO"));
-            } catch (IllegalArgumentException exception) {
-                Bukkit.getLogger().severe("Invalid sound specified for teleportation_warmup, using no sound instead");
-                this.teleportWarmupSound = null;
-            }
-
-            try {
                 this.teleportCancelledSound = Sound.valueOf(config.getString("general.sounds.teleportation_cancelled", "ENTITY_ITEM_BREAK"));
             } catch (IllegalArgumentException exception) {
-                Bukkit.getLogger().severe("Invalid sound specified for teleportation_cancelled, using no sound instead");
-                this.teleportCancelledSound = null;
+                Bukkit.getLogger().severe("Invalid sound specified in config.yml; using default sounds instead.");
+                this.teleportationCompleteSound = Sound.ENTITY_ENDERMAN_TELEPORT;
+                this.teleportWarmupSound = Sound.BLOCK_NOTE_BLOCK_BANJO;
+                this.teleportCancelledSound = Sound.ENTITY_ITEM_BREAK;
             }
 
             this.allowUnicodeInDescriptions = config.getBoolean("allow_unicode_descriptions", true);
 
             this.checkVanishedPlayers = config.getBoolean("handle_vanished_players", true);
-
-            this.usePaperLibIfAvailable = config.getBoolean("general.use_paperlib_if_available", true);
 
             this.doSpawnCommand = config.getBoolean("spawn_command.enabled", true);
             this.doCrossServerSpawn = config.getBoolean("spawn_command.bungee_network_spawn.enabled", false);
@@ -460,17 +443,14 @@ public class Settings {
         return warpsPerPage;
     }
 
-    @Nullable
     public Sound getTeleportationCompleteSound() {
         return teleportationCompleteSound;
     }
 
-    @Nullable
     public Sound getTeleportWarmupSound() {
         return teleportWarmupSound;
     }
 
-    @Nullable
     public Sound getTeleportCancelledSound() {
         return teleportCancelledSound;
     }
@@ -531,13 +511,9 @@ public class Settings {
         return redisPassword;
     }
 
-    public boolean getRedisSSL() {
-        return redisSSL;
-    }
+    public boolean getRedisSSL() { return redisSSL; }
 
-    public boolean getDoBackCommand() {
-        return doBackCommand;
-    }
+    public boolean getDoBackCommand() { return doBackCommand; }
 
     public int getHikariMaximumPoolSize() {
         return hikariMaximumPoolSize;
@@ -567,33 +543,14 @@ public class Settings {
         return homeLimitPermissionStacking;
     }
 
-    public boolean doUsePaperLibIfAvailable() {
-        return usePaperLibIfAvailable;
-    }
-
     public DisplayStyle getWarmupDisplayStyle() {
         return teleportWarmupDisplayStyle;
     }
 
-    /**
-     * Used to define where messages should appear
-     */
     public enum DisplayStyle {
-        /**
-         * In the action bar (above the hotbar)
-         */
         ACTION_BAR,
-        /**
-         * In the title slot in the middle of the player's screen
-         */
         TITLE,
-        /**
-         * In the subtitle slot, just below the title
-         */
         SUBTITLE,
-        /**
-         * In chat
-         */
         CHAT
     }
 }

@@ -21,8 +21,8 @@ import java.util.logging.Level;
 
 public class SquareMap extends Map {
 
-    private final HashMap<WorldIdentifier, SimpleLayerProvider> publicHomeProviders = new HashMap<>();
-    private final HashMap<WorldIdentifier, SimpleLayerProvider> warpProviders = new HashMap<>();
+    private final HashMap<String, SimpleLayerProvider> publicHomeProviders = new HashMap<>();
+    private final HashMap<String,SimpleLayerProvider> warpProviders = new HashMap<>();
     private final static int MARKER_SIZE = 20;
     private final static HuskHomes plugin = HuskHomes.getInstance();
 
@@ -30,19 +30,16 @@ public class SquareMap extends Map {
     public void addWarpMarker(Warp warp) {
         World world = Bukkit.getWorld(warp.getWorldName());
         if (world != null) {
-            for (WorldIdentifier worldIdentifier : warpProviders.keySet()) {
-                if (worldIdentifier.value().equals(world.getName())) {
-                    Icon marker = Marker.icon(
-                            Point.of(warp.getX(), warp.getZ()),
-                            Key.of(WARP_MARKER_IMAGE_NAME),
-                            MARKER_SIZE);
-                    marker.markerOptions(MarkerOptions.builder()
-                            .hoverTooltip(warp.getName())
-                            .clickTooltip(getWarpInfoMenu(warp))
-                            .build());
-                    warpProviders.get(worldIdentifier).addMarker(Key.of(getWarpMarkerName(warp.getName())), marker);
-                    break;
-                }
+            if (warpProviders.containsKey(world.getName())) {
+                Icon marker = Marker.icon(
+                        Point.of(warp.getX(), warp.getZ()),
+                        Key.of(WARP_MARKER_IMAGE_NAME),
+                        MARKER_SIZE);
+                marker.markerOptions(MarkerOptions.builder()
+                        .hoverTooltip(warp.getName())
+                        .clickTooltip(getWarpInfoMenu(warp))
+                        .build());
+                warpProviders.get(world.getName()).addMarker(Key.of(getWarpMarkerName(warp.getName())), marker);
             }
         }
     }
@@ -57,20 +54,17 @@ public class SquareMap extends Map {
     public void addPublicHomeMarker(Home home) {
         World world = Bukkit.getWorld(home.getWorldName());
         if (world != null) {
-            for (WorldIdentifier worldIdentifier : publicHomeProviders.keySet()) {
-                if (worldIdentifier.value().equals(world.getName())) {
-                    Icon marker = Marker.icon(
-                            Point.of(home.getX(), home.getZ()),
-                            Key.of(PUBLIC_HOME_MARKER_IMAGE_NAME),
-                            MARKER_SIZE);
-                    marker.markerOptions(MarkerOptions.builder()
-                            .hoverTooltip(home.getName())
-                            .clickTooltip(getPublicHomeInfoMenu(home))
-                            .build());
-                    publicHomeProviders.get(worldIdentifier).addMarker(
-                            Key.of(getPublicHomeMarkerName(home.getOwnerUsername(), home.getName())), marker);
-                    break;
-                }
+            if (publicHomeProviders.containsKey(world.getName())) {
+                Icon marker = Marker.icon(
+                        Point.of(home.getX(), home.getZ()),
+                        Key.of(PUBLIC_HOME_MARKER_IMAGE_NAME),
+                        MARKER_SIZE);
+                marker.markerOptions(MarkerOptions.builder()
+                        .hoverTooltip(home.getName())
+                        .clickTooltip(getPublicHomeInfoMenu(home))
+                        .build());
+                publicHomeProviders.get(world.getName()).addMarker(
+                        Key.of(getPublicHomeMarkerName(home.getOwnerUsername(), home.getName())), marker);
             }
         }
     }
@@ -128,12 +122,12 @@ public class SquareMap extends Map {
     }
 
     // Removes a marker from the Squaremap Marker API
-    private void removeMarker(Key markerKey, HashMap<WorldIdentifier, SimpleLayerProvider> layerProviders) {
-        WorldIdentifier markerWorld = null;
-        for (WorldIdentifier worldIdentifier : layerProviders.keySet()) {
-            SimpleLayerProvider warpProvider = layerProviders.get(worldIdentifier);
+    private void removeMarker(Key markerKey, HashMap<String, SimpleLayerProvider> layerProviders) {
+        String markerWorld = null;
+        for (String worldName : layerProviders.keySet()) {
+            SimpleLayerProvider warpProvider = layerProviders.get(worldName);
             if (warpProvider.hasMarker(markerKey)) {
-                markerWorld = worldIdentifier;
+                markerWorld = worldName;
                 break;
             }
         }
@@ -153,7 +147,7 @@ public class SquareMap extends Map {
                         .zIndex(250)
                         .build();
         world.layerRegistry().register(Key.of(PUBLIC_HOMES_MARKER_SET_ID), publicHomeProvider);
-        publicHomeProviders.put(world.identifier(), publicHomeProvider);
+        publicHomeProviders.put(world.name(), publicHomeProvider);
 
         // Register warps map layer
         SimpleLayerProvider warpProvider =
@@ -164,7 +158,7 @@ public class SquareMap extends Map {
                         .zIndex(250)
                         .build();
         world.layerRegistry().register(Key.of(WARPS_MARKER_SET_ID), warpProvider);
-        warpProviders.put(world.identifier(), warpProvider);
+        warpProviders.put(world.name(), warpProvider);
 
     }
 

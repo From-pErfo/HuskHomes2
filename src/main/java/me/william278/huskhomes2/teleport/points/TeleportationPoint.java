@@ -1,11 +1,11 @@
 package me.william278.huskhomes2.teleport.points;
 
-import me.william278.huskhomes2.HuskHomes;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 /**
+ * @author William
  * HuskHomes' position representation object; represents an in-game location on a server
  */
 public class TeleportationPoint {
@@ -20,17 +20,10 @@ public class TeleportationPoint {
 
     /**
      * Update the location of a TeleportationPoint
-     *
      * @param location a new Bukkit location
-     * @param server   a new Bungee server ID
-     * @throws IllegalStateException if the location supplied has an unloaded world
+     * @param server a new Bungee server ID
      */
-    public void setLocation(Location location, String server) throws IllegalStateException {
-        if (!location.isWorldLoaded()) {
-            throw new IllegalStateException("The location provided has a world not loaded");
-        }
-        assert location.getWorld() != null;
-
+    public void setLocation(Location location, String server) {
         worldName = location.getWorld().getName();
         x = location.getX();
         y = location.getY();
@@ -42,27 +35,25 @@ public class TeleportationPoint {
 
     /**
      * HuskHomes' position representation object; represents an in-game location on a server
-     *
      * @param location The Bukkit location
-     * @param server   The Bungee server ID which the location is on
+     * @param server The Bungee server ID which the location is on
      */
     public TeleportationPoint(Location location, String server) {
-        if (!location.isWorldLoaded()) {
-            throw new IllegalStateException("The location provided has a world not loaded");
+        if (location.getWorld() == null) {
+            throw new IllegalStateException("The location provided has an invalid world");
         }
         setLocation(location, server);
     }
 
     /**
      * HuskHomes' position representation object; represents an in-game location on a server
-     *
      * @param worldName The name of the location's world
-     * @param x         The location's x-coordinate
-     * @param y         The location's y-coordinate
-     * @param z         The location's z-coordinate
-     * @param yaw       The location's yaw angle
-     * @param pitch     The location's pitch angle
-     * @param server    The Bungee server ID which the location is on
+     * @param x The location's x-coordinate
+     * @param y The location's y-coordinate
+     * @param z The location's z-coordinate
+     * @param yaw The location's yaw angle
+     * @param pitch The location's pitch angle
+     * @param server The Bungee server ID which the location is on
      */
     public TeleportationPoint(String worldName, double x, double y, double z, float yaw, float pitch, String server) {
         this.server = server;
@@ -75,22 +66,21 @@ public class TeleportationPoint {
     }
 
     /**
-     * Get the Bukkit {@link Location} from a TeleportationPoint
-     *
+     * Get the Bukkit location from a TeleportationPoint
      * @return the Bukkit location on the server from a TeleportationPoint
      * @throws IllegalStateException if the location is not valid on the server
      */
     public Location getLocation() {
         World world = Bukkit.getWorld(worldName);
-        if (world == null) {
-            throw new IllegalStateException(worldName + " is not loaded on this server; failed to fetch location");
+        if (world != null) {
+            return new Location(world, x, y, z, yaw, pitch);
+        } else {
+            throw new IllegalStateException("The world \"" + worldName + "\" could not be found on the server; could not return location");
         }
-        return new Location(world, x, y, z, yaw, pitch);
     }
 
     /**
      * Get the name of the world from a TeleportationPoint
-     *
      * @return the name of the world the position is on from a TeleportationPoint
      */
     public String getWorldName() {
@@ -99,7 +89,6 @@ public class TeleportationPoint {
 
     /**
      * Get the Bungee server ID from a TeleportationPoint
-     *
      * @return the TeleportationPoint's Bungee server ID
      */
     public String getServer() {
@@ -108,7 +97,6 @@ public class TeleportationPoint {
 
     /**
      * Get the x-coordinate of a TeleportationPoint
-     *
      * @return the x-coordinate
      */
     public double getX() {
@@ -117,7 +105,6 @@ public class TeleportationPoint {
 
     /**
      * Get the y-coordinate of a TeleportationPoint
-     *
      * @return the y-coordinate
      */
     public double getY() {
@@ -126,7 +113,6 @@ public class TeleportationPoint {
 
     /**
      * Get the z-coordinate of a TeleportationPoint
-     *
      * @return the z-coordinate
      */
     public double getZ() {
@@ -135,7 +121,6 @@ public class TeleportationPoint {
 
     /**
      * Get the yaw angle of a TeleportationPoint
-     *
      * @return the yaw angle
      */
     public float getYaw() {
@@ -144,20 +129,9 @@ public class TeleportationPoint {
 
     /**
      * Get the pitch angle of a TeleportationPoint
-     *
      * @return the pitch angle
      */
     public float getPitch() {
         return pitch;
-    }
-
-    /**
-     * Returns the TeleportationPoint as a formatted string
-     *
-     * @return the TeleportationPoint
-     */
-    @Override
-    public String toString() {
-        return x + ", " + y + ", " + z + " (" + worldName + (HuskHomes.getSettings().doBungee() ? "/" + server : "") + ")";
     }
 }

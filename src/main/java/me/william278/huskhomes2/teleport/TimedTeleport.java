@@ -76,18 +76,14 @@ public class TimedTeleport {
                 }
                 if (hasMoved(executablePlayer)) {
                     cancel();
-                    if (HuskHomes.getSettings().getTeleportCancelledSound() != null) {
-                        executablePlayer.playSound(executablePlayer.getLocation(), HuskHomes.getSettings().getTeleportCancelledSound(), 1, 1);
-                    }
+                    executablePlayer.playSound(executablePlayer.getLocation(), HuskHomes.getSettings().getTeleportCancelledSound(), 1, 1);
                     MessageManager.sendMessage(player, "teleporting_cancelled_movement");
                     sendWarmupMessage(player, "teleporting_action_bar_cancelled");
                     return;
                 }
                 if (hasLostHealth(executablePlayer)) {
                     cancel();
-                    if (HuskHomes.getSettings().getTeleportCancelledSound() != null) {
-                        executablePlayer.playSound(executablePlayer.getLocation(), HuskHomes.getSettings().getTeleportCancelledSound(), 1, 1);
-                    }
+                    executablePlayer.playSound(executablePlayer.getLocation(), HuskHomes.getSettings().getTeleportCancelledSound(), 1, 1);
                     MessageManager.sendMessage(player, "teleporting_cancelled_damage");
                     sendWarmupMessage(player, "teleporting_action_bar_cancelled");
                     return;
@@ -142,9 +138,7 @@ public class TimedTeleport {
                     return;
                 }
                 sendWarmupMessage(executablePlayer, "teleporting_action_bar_countdown", Integer.toString(i[0]));
-                if (HuskHomes.getSettings().getTeleportWarmupSound() != null) {
-                    executablePlayer.playSound(executablePlayer.getLocation(), HuskHomes.getSettings().getTeleportWarmupSound(), 1, 1);
-                }
+                executablePlayer.playSound(executablePlayer.getLocation(), HuskHomes.getSettings().getTeleportWarmupSound(), 1, 1);
             }
         }.runTaskTimer(plugin, 0, 20L);
     }

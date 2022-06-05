@@ -62,7 +62,7 @@ public class WarpCommand extends CommandBase {
 
     @Override
     protected void onCommand(Player player, Command command, String label, String[] args) {
-        // Accept console input
+        // Console is fine too
     }
 
     // Handle a warp from console

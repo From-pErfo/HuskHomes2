@@ -4,6 +4,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import io.papermc.lib.PaperLib;
 import me.william278.huskhomes2.HuskHomes;
+import me.william278.huskhomes2.util.MessageManager;
 import me.william278.huskhomes2.api.events.PlayerPreTeleportEvent;
 import me.william278.huskhomes2.data.DataManager;
 import me.william278.huskhomes2.data.message.CrossServerMessageHandler;
@@ -11,7 +12,6 @@ import me.william278.huskhomes2.data.message.Message;
 import me.william278.huskhomes2.integrations.VaultIntegration;
 import me.william278.huskhomes2.teleport.points.RandomPoint;
 import me.william278.huskhomes2.teleport.points.TeleportationPoint;
-import me.william278.huskhomes2.util.MessageManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -19,7 +19,6 @@ import org.bukkit.entity.Player;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.logging.Level;
 
 public class TeleportManager {
@@ -47,20 +46,12 @@ public class TeleportManager {
     }
 
     // Teleport a player to a location on the server or proxy server network
-    public static void teleportPlayer(Player player, TeleportationPoint targetPoint) {
-        final TeleportationPoint currentPosition = new TeleportationPoint(player.getLocation(),
+    public static void teleportPlayer(Player player, TeleportationPoint point) {
+        final TeleportationPoint destination = new TeleportationPoint(player.getLocation(),
                 HuskHomes.getSettings().getServerID());
-
-        // Safety checks
-        if (Math.abs(targetPoint.getX()) > 30000000 || Math.abs(targetPoint.getZ()) > 30000000 || Math.abs(targetPoint.getY()) > 30000000) {
-            MessageManager.sendMessage(player, "error_invalid_coordinates");
-            return;
-        }
-
-        // Execute teleport
         try (Connection connection = HuskHomes.getConnection()) {
-            DataManager.setPlayerLastPosition(player, currentPosition, connection);
-            DataManager.setPlayerDestinationLocation(player, targetPoint, connection);
+            DataManager.setPlayerLastPosition(player, destination, connection);
+            DataManager.setPlayerDestinationLocation(player, point, connection);
             teleportPlayer(player);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "An SQL exception occurred teleporting a player.", e);
@@ -100,9 +91,16 @@ public class TeleportManager {
                             if (!HuskHomes.getSettings().doBungee() || server.equals(HuskHomes.getSettings().getServerID())) {
                                 DataManager.setPlayerTeleporting(player, false, connection);
                                 DataManager.deletePlayerDestination(player.getName(), connection);
-
-                                final Location targetLocation = targetPoint[0].getLocation();
-                                teleportLocally(player, targetLocation, true);
+                                Location targetLocation = targetPoint[0].getLocation();
+                                Bukkit.getScheduler().runTask(plugin, () -> {
+                                    if (!player.isEmpty()) {
+                                        player.eject(); // Eject passengers before  teleporting
+                                    }
+                                    PaperLib.teleportAsync(player, targetLocation).thenRun(() -> {
+                                        player.playSound(targetLocation, HuskHomes.getSettings().getTeleportationCompleteSound(), 1, 1);
+                                        MessageManager.sendMessage(player, "teleporting_complete");
+                                    });
+                                });
                             } else if (HuskHomes.getSettings().doBungee()) {
                                 DataManager.setPlayerDestinationLocation(player, targetPoint[0], connection);
                                 DataManager.setPlayerTeleporting(player, true, connection);
@@ -110,7 +108,7 @@ public class TeleportManager {
                             }
                         } catch (SQLException sqlException) {
                             plugin.getLogger().log(Level.SEVERE, "An SQL exception occurred teleporting a player", sqlException);
-                        } catch (IllegalStateException illegalStateException) {
+                        } catch (IllegalArgumentException illegalArgumentException) {
                             MessageManager.sendMessage(player, "error_invalid_on_arrival");
                         }
                     });
@@ -119,46 +117,8 @@ public class TeleportManager {
         });
     }
 
-    /**
-     * Teleport a player locally on the server via PaperLib
-     *
-     * @param player         The {@link Player} to teleport
-     * @param targetLocation The target {@link Location}
-     * @param notify         Whether to notify the player of teleportation completion or failure through sounds and messages
-     */
-    public static void teleportLocally(Player player, Location targetLocation, boolean notify) {
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!player.isEmpty()) {
-                player.eject(); // Eject passengers before teleporting
-            }
-            if (!targetLocation.isWorldLoaded()) {
-                if (notify) {
-                    MessageManager.sendMessage(player, "error_invalid_on_arrival");
-                }
-                return;
-            }
-            if (HuskHomes.getSettings().doUsePaperLibIfAvailable()) {
-                PaperLib.teleportAsync(player, targetLocation).thenAccept(succeeded -> {
-                    if (!succeeded) {
-                        player.teleport(targetLocation); // Teleport normally if paperlib fails
-                    }
-                });
-            } else {
-                player.teleport(targetLocation);
-            }
-
-            // Send teleportation complete sound
-            if (notify) {
-                if (HuskHomes.getSettings().getTeleportationCompleteSound() != null) {
-                    player.playSound(targetLocation, HuskHomes.getSettings().getTeleportationCompleteSound(), 1, 1);
-                }
-                MessageManager.sendMessage(player, "teleporting_complete");
-            }
-        });
-    }
-
     public static void queueTimedTeleport(Player player, String targetPlayer) {
-        if (player.hasPermission("huskhomes.bypass_timer") || HuskHomes.getSettings().getTeleportWarmupTime() <= 0) {
+        if (player.hasPermission("huskhomes.bypass_timer")) {
             teleportPlayer(player, targetPlayer);
             return;
         }
@@ -167,7 +127,7 @@ public class TeleportManager {
     }
 
     public static void queueTimedTeleport(Player player, TeleportationPoint point) {
-        if (player.hasPermission("huskhomes.bypass_timer") || HuskHomes.getSettings().getTeleportWarmupTime() <= 0) {
+        if (player.hasPermission("huskhomes.bypass_timer")) {
             teleportPlayer(player, point);
             return;
         }
@@ -203,7 +163,7 @@ public class TeleportManager {
                         }
                     }
                 }
-                if (player.hasPermission("huskhomes.bypass_timer") || HuskHomes.getSettings().getTeleportWarmupTime() <= 0) {
+                if (player.hasPermission("huskhomes.bypass_timer")) {
                     if (HuskHomes.getSettings().doEconomy()) {
                         double backCost = HuskHomes.getSettings().getRtpCost();
                         if (backCost > 0) {
@@ -245,7 +205,7 @@ public class TeleportManager {
                 }
             }
         }
-        if (player.hasPermission("huskhomes.bypass_timer") || HuskHomes.getSettings().getTeleportWarmupTime() <= 0) {
+        if (player.hasPermission("huskhomes.bypass_timer")) {
             RandomPoint randomPoint = new RandomPoint(player);
             if (randomPoint.hasFailed()) {
                 return;
@@ -324,15 +284,11 @@ public class TeleportManager {
         }
     }
 
-    public static Optional<TeleportationPoint> getSpawnLocation() {
-        if (spawnLocation == null) {
-            return Optional.empty();
-        } else {
-            return Optional.of(spawnLocation);
-        }
+    public static TeleportationPoint getSpawnLocation() {
+        return spawnLocation;
     }
 
-    public static void setSpawnLocation(TeleportationPoint spawnPoint) {
-         spawnLocation = spawnPoint;
+    public static void setSpawnLocation(TeleportationPoint spawnLocation) {
+        TeleportManager.spawnLocation = spawnLocation;
     }
 }
